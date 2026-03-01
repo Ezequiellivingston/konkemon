@@ -25,22 +25,19 @@ def validar_token(token: HTTPAuthorizationCredentials = Depends(auth_scheme)):
 @router.get("/", response_model=schemas.PaginatedPokemon)
 def get_pokemons(
     db: Session = Depends(get_db),
-    skip: int = Query(0, ge=0),
+    page: int = Query(1, ge=1), # Cambiamos 'skip' por 'page'
     limit: int = Query(10, ge=1, le=100)
 ):
+    skip = (page - 1) * limit
     total_records = db.query(models.Pokemon).count()
-    
     pokemons = db.query(models.Pokemon).offset(skip).limit(limit).all()
-    
-    current_page = (skip // limit) + 1
     
     return {
         "total": total_records,
-        "page": current_page,
+        "page": page,
         "limit": limit,
         "results": pokemons
     }
-
 @router.post("/", response_model=schemas.Pokemon, dependencies=[Depends(validar_token)])
 def create_pokemon(pokemon: schemas.PokemonCreate, db: Session = Depends(get_db)):
     nuevo_pokemon = models.Pokemon(
